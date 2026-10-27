@@ -147,11 +147,11 @@
    ============================================================ */
 const CONFIG = {
   SHOP_NAME: "Malika Print",
-  CONTACT_USERNAME: "Marketmalika",          // buyurtma yoziladigan Telegram akkaunt (@ belgisisiz)
+  CONTACT_USERNAME: "J200505",          // buyurtma yoziladigan Telegram akkaunt (@ belgisisiz)
   PHONE: "+998774157278",
-  ADMIN_TELEGRAM_IDS: [1990322820],               // sizning Telegram ID raqamingiz, masalan: [123456789]
-  SUPABASE_URL: "bnvomypnvqmocoxcwhlu",                     // masalan: "https://abcd1234.supabase.co"
-  SUPABASE_ANON_KEY: "ap-southeast-1",                // Supabase → Project Settings → API → anon public key
+  ADMIN_TELEGRAM_IDS: [],               // sizning Telegram ID raqamingiz, masalan: [123456789]
+  SUPABASE_URL: "",                     // masalan: "https://abcd1234.supabase.co"
+  SUPABASE_ANON_KEY: "",                // Supabase → Project Settings → API → anon public key
   BUCKET: "products",
 };
 /* ============================================================ */
@@ -244,9 +244,25 @@ const DemoStore = {
 
 let sb = null;
 const SupaStore = {
+  initError: null,
   async init(){
-    await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-    sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    // Manzilni tozalash: oxiridagi "/" yoki "/rest/v1" ni olib tashlaymiz
+    const url = String(CONFIG.SUPABASE_URL).trim().replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+    const key = String(CONFIG.SUPABASE_ANON_KEY).trim();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url))
+      throw new Error(`SUPABASE_URL notoʻgʻri: "${url}". Toʻgʻri koʻrinishi: https://xxxx.supabase.co`);
+    if (key.length < 30)
+      throw new Error("SUPABASE_ANON_KEY toʻliq emas — kalitni oxirigacha nusxalang.");
+    // Kutubxonani yuklash: birinchi manzil ochilmasa, zaxirasidan
+    const cdns = ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+                  "https://unpkg.com/@supabase/supabase-js@2"];
+    for (const src of cdns){
+      if (window.supabase && window.supabase.createClient) break;
+      try { await loadScript(src); } catch(e){ console.warn(e); }
+    }
+    if (!(window.supabase && window.supabase.createClient))
+      throw new Error("Supabase kutubxonasi yuklanmadi. Internetni tekshirib, katalogni qayta oching.");
+    sb = window.supabase.createClient(url, key);
   },
   async list(){
     const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: false });
@@ -272,6 +288,7 @@ const SupaStore = {
     const op = this.pathFromUrl(imageUrl); if (op) sb.storage.from(CONFIG.BUCKET).remove([op]).catch(()=>{});
   },
   async ensureAuth(){
+    if (!sb) throw new Error(this.initError || "Bazaga ulanib boʻlmadi. Katalogni yopib, qayta oching.");
     const { data } = await sb.auth.getSession();
     if (data && data.session) return true;
     return openLogin();
@@ -462,7 +479,14 @@ $("#phoneLink").href = "tel:" + CONFIG.PHONE;
   else if (IS_ADMIN){ badge.hidden = false; badge.textContent = "Admin"; }
   if (!DEMO){
     try { await store.init(); }
-    catch(e){ toast(e.message, 5000); return; }
+    catch(e){
+      console.error(e);
+      store.initError = e.message || String(e);
+      $("#grid").innerHTML = "";
+      const empty = $("#empty"); empty.hidden = false;
+      empty.innerHTML = `⚠️ Bazaga ulanib boʻlmadi<br><small>${esc(store.initError)}</small>`;
+      return;
+    }
   }
   reload();
 })();
