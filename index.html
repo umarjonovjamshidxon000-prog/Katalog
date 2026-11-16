@@ -355,8 +355,13 @@ function closeSheet(){
 $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeSheet(); });
 if (inTelegram) try { tg.BackButton.onClick(closeSheet); } catch(e){}
 
-// Botni ochadi. start berilsa (masalan "p_12"), bot qaysi mahsulot tanlanganini biladi.
+// Katalog botdagi pastki "📖 Katalog" tugmasidan ochilgan bo'lsa (?kb=1),
+// tanlangan mahsulot botga to'g'ridan-to'g'ri yuboriladi va katalog yopiladi — chatda /start chiqmaydi.
+const FROM_BOT_KB = params.has("kb");
 function openBot(start){
+  if (FROM_BOT_KB && tg){
+    try { start ? tg.sendData(start) : tg.close(); return; } catch(e){ console.warn(e); }
+  }
   const url = `https://t.me/${CONFIG.BOT_USERNAME}` + (start ? `?start=${encodeURIComponent(start)}` : "");
   if (inTelegram) try { return tg.openTelegramLink(url); } catch(e){}
   window.open(url, "_blank");
