@@ -147,7 +147,7 @@
    ============================================================ */
 const CONFIG = {
   SHOP_NAME: "Malika Print",
-  CONTACT_USERNAME: "Marketmalika",          // buyurtma yoziladigan Telegram akkaunt (@ belgisisiz)
+  BOT_USERNAME: "malikaagentbot",             // buyurtma boti username'i (@ belgisisiz, masalan: MalikaPrintBot)
   PHONE: "+998774157278",
   ADMIN_TELEGRAM_IDS: [1990322820],               // sizning Telegram ID raqamingiz, masalan: [123456789]
   SUPABASE_URL: "https://bnvomypnvqmocoxcwhlu.supabase.co",                     // masalan: "https://abcd1234.supabase.co"
@@ -355,8 +355,9 @@ function closeSheet(){
 $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeSheet(); });
 if (inTelegram) try { tg.BackButton.onClick(closeSheet); } catch(e){}
 
-function openChat(text){
-  const url = `https://t.me/${CONFIG.CONTACT_USERNAME}` + (text ? `?text=${encodeURIComponent(text)}` : "");
+// Botni ochadi. start berilsa (masalan "p_12"), bot qaysi mahsulot tanlanganini biladi.
+function openBot(start){
+  const url = `https://t.me/${CONFIG.BOT_USERNAME}` + (start ? `?start=${encodeURIComponent(start)}` : "");
   if (inTelegram) try { return tg.openTelegramLink(url); } catch(e){}
   window.open(url, "_blank");
 }
@@ -374,7 +375,7 @@ function openDetail(p){
     </div>
     ${IS_ADMIN ? `<div class="row"><button class="btn ghost" id="dEdit">✏️ Tahrirlash</button></div>` : ""}
   `);
-  $("#dOrder").onclick = () => { haptic(); openChat(`Assalomu alaykum! "${p.name}" boʻyicha maʼlumot olmoqchi edim.`); };
+  $("#dOrder").onclick = () => { haptic(); openBot("p_" + p.id); };
   if (IS_ADMIN) $("#dEdit").onclick = () => startEdit(p);
 }
 
@@ -466,7 +467,7 @@ $("#chips").addEventListener("click", e => {
 });
 $("#q").addEventListener("input", e => { query = e.target.value; render(); });
 $("#fab").onclick = () => { haptic(); startEdit(null); };
-$("#tgLink").onclick = e => { e.preventDefault(); openChat(); };
+$("#tgLink").onclick = e => { e.preventDefault(); openBot(); };
 $("#phoneLink").href = "tel:" + CONFIG.PHONE;
 
 /* ---------------- Ishga tushirish ---------------- */
